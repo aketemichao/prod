@@ -224,7 +224,7 @@ const vocabulary = [
     { nihon: '# 十万', romaji: '# jyuuman', translation: '200.000~900.000', categoria: 'Números' },
     { nihon: '百万\  /  ひゃくまん', romaji: 'hyakuman', translation: '1.000.000', categoria: 'Números' },
     { nihon: '# 百万', romaji: '# hyakuman', translation: '2.000.000~9.000.000', categoria: 'Números' },
-  	{ nihon: 'わたし', romaji: 'Watashi', translation: 'YO / Formal / Los dos / Standard', categoria: 'Pronombres' },
+  { nihon: 'わたし', romaji: 'Watashi', translation: 'YO / Formal / Los dos / Standard', categoria: 'Pronombres' },
     { nihon: 'わたくし', romaji: 'Watakushi', translation: 'YO / Muy formal / Los dos', categoria: 'Pronombres' },
     { nihon: 'あたし', romaji: 'Atashi', translation: 'YO / Informal / Mujer / Conversación', categoria: 'Pronombres' },
     { nihon: 'ぼく', romaji: 'Boku', translation: 'YO / Informal / Hombre', categoria: 'Pronombres' },
