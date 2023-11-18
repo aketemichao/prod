@@ -1,0 +1,251 @@
+class JapaneseVocabularyGame {
+  constructor(vocabulary) {
+    this.vocabulary = vocabulary;
+    this.isClickable = true;
+    this.currentWordIndex = -1;
+    this.correctCount = 0;
+    this.incorrectCount = 0;
+    this.currentStreak = 0;
+    this.romajiVisible = false;
+    this.nightmareMode = false;
+    this.nightmareTimer = null;
+    this.initializeEventListeners();
+    this.displayNewWord();
+    this.updateScoreboard();
+  }
+
+  getRandomWordIndex() {
+    let randomIndex;
+    do {
+      randomIndex = Math.floor(Math.random() * this.vocabulary.length);
+    } while (randomIndex === this.currentWordIndex);
+    return randomIndex;
+  }
+
+	displayNewWord() {
+	  this.currentWordIndex = this.getRandomWordIndex();
+	  const word = this.vocabulary[this.currentWordIndex];
+	  const wordDisplay = document.getElementById('word-display');
+	  wordDisplay.textContent = this.romajiVisible ? word.romaji : word.nihon;
+	  this.initializeOptions();
+	  if (this.nightmareMode) this.handleNightmareMode();
+	}
+
+  initializeOptions() {
+    const optionsContainer = document.getElementById('options');
+    optionsContainer.innerHTML = '';
+    const correctOption = this.vocabulary[this.currentWordIndex];
+    const shuffledOptions = [correctOption].concat(
+      this.vocabulary
+        .filter(word => word.categoria === correctOption.categoria && word.nihon !== correctOption.nihon)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 5)
+    ).sort(() => 0.5 - Math.random());
+
+    shuffledOptions.forEach((option, index) => {
+      const button = document.createElement('button');
+      button.textContent = `${index + 1}) ${option.translation}`;
+      button.setAttribute('data-translation', option.translation);
+      button.className = 'option';
+      button.onclick = () => this.handleAnswerSelection(option.translation, button);
+      optionsContainer.appendChild(button);
+    });
+  }
+
+  updateScoreboard() {
+    document.getElementById('correct-count').textContent = this.correctCount;
+    document.getElementById('incorrect-count').textContent = this.incorrectCount;
+    document.getElementById('current-streak').textContent = this.currentStreak;
+  }
+
+	handleAnswerSelection(selectedTranslation, selectedOption) {
+		if (!this.isClickable) return;
+		this.isClickable = false;
+		const currentWord = this.vocabulary[this.currentWordIndex];
+
+		// Clear any existing Nightmare Mode timer
+		clearInterval(this.nightmareTimer);
+
+		if (selectedTranslation === currentWord.translation) {
+			this.correctCount++;
+			this.currentStreak++;
+			this.flashOption(selectedOption, 'green');
+		} else {
+			this.incorrectCount++;
+			this.currentStreak = 0;
+			this.flashOption(selectedOption, 'red');
+			document.querySelectorAll('.option').forEach(button => {
+				if (button.getAttribute('data-translation') === currentWord.translation) {
+					this.flashOption(button, 'yellow');
+				}
+			});
+		}
+
+		this.updateScoreboard();
+		setTimeout(() => {
+			this.displayNewWord();
+			if (!this.nightmareMode) {
+				this.isClickable = true; // Re-enable clicks if Nightmare Mode is not active
+			} else {
+				this.handleNightmareMode(); // Restart Nightmare Mode timer
+			}
+		}, 2000);
+	}
+
+  flashOption(optionElement, color) {
+    const flashClass = `flash-${color}`;
+    optionElement.classList.add(flashClass);
+    setTimeout(() => {
+      optionElement.classList.remove(flashClass);
+      this.isClickable = true;
+    }, 2000);
+  }
+
+  initializeEventListeners() {
+    document.getElementById('toggle-romaji').addEventListener('click', () => {
+      this.toggleRomaji();
+    });
+    document.getElementById('nightmare-mode').addEventListener('click', () => {
+      this.toggleNightmareMode();
+    });
+  }
+
+toggleRomaji() {
+  this.romajiVisible = !this.romajiVisible;
+  const wordDisplay = document.getElementById('word-display');
+  const currentWord = this.vocabulary[this.currentWordIndex];
+  wordDisplay.textContent = this.romajiVisible ? currentWord.romaji : currentWord.nihon;
+}
+
+  toggleNightmareMode() {
+    this.nightmareMode = !this.nightmareMode;
+    if (!this.nightmareMode) {
+      clearInterval(this.nightmareTimer);
+      document.getElementById('timer').textContent = '';
+      document.getElementById('timer').classList.remove('flash-red');
+    } else {
+      this.handleNightmareMode();
+    }
+  }
+	handleNightmareMode() {
+		clearInterval(this.nightmareTimer); // Clear any existing timer
+
+		let timeLeft = 10;
+		const timerDisplay = document.getElementById('timer');
+		timerDisplay.textContent = `00:${timeLeft}`;
+
+		this.nightmareTimer = setInterval(() => {
+			timeLeft--;
+			timerDisplay.textContent = `00:${timeLeft < 10 ? '0' : ''}${timeLeft}`;
+			if (timeLeft < 3) {
+				timerDisplay.classList.add('flash-red');
+			}
+			if (timeLeft <= 0) {
+				clearInterval(this.nightmareTimer);
+				timerDisplay.classList.remove('flash-red');
+				this.isClickable = false; // Disable clicks as timer hits 0
+				this.markAnswerIncorrect();
+			}
+		}, 1000);
+	}
+  markAnswerIncorrect() {
+    const currentWord = this.vocabulary[this.currentWordIndex];
+    this.incorrectCount++;
+    this.currentStreak = 0;
+
+    document.querySelectorAll('.option').forEach(button => {
+      if (button.getAttribute('data-translation') === currentWord.translation) {
+        this.flashOption(button, 'yellow');
+      }
+    });
+
+    this.updateScoreboard();
+    setTimeout(() => {
+      this.displayNewWord();
+      this.isClickable = true;
+    }, 2000);
+  }
+}
+
+const vocabulary = [
+    { nihon: 'てぶくろ', romaji: 'Tebukuro', translation: 'Guantes', categoria: 'Ropa' },
+    { nihon: 'スリッパ', romaji: 'Surippa', translation: 'Zapatilla', categoria: 'Ropa' },
+    { nihon: 'うでどけい', romaji: 'Udedokei', translation: 'Reloj de muñeca', categoria: 'Ropa' },
+    { nihon: 'T シャツ', romaji: 'Ti shatsu', translation: 'Camiseta', categoria: 'Ropa' },
+    { nihon: 'マフラー', romaji: 'Mafura-', translation: 'Bufanda', categoria: 'Ropa' },
+    { nihon: 'スーツ', romaji: 'Su-tsu', translation: 'Traje', categoria: 'Ropa' },
+    { nihon: 'スカート', romaji: 'Suka-to', translation: 'Falda', categoria: 'Ropa' },
+    { nihon: 'くつした', romaji: 'Kutsushita', translation: 'Calcetines', categoria: 'Ropa' },
+    { nihon: 'ズボン', romaji: 'Zubon', translation: 'Pantalones', categoria: 'Ropa' },
+    { nihon: 'ワンピース', romaji: 'Wanpi-su', translation: 'Vestido', categoria: 'Ropa' },
+    { nihon: 'ぼうし', romaji: 'Boushi', translation: 'Sombrero', categoria: 'Ropa' },
+    { nihon: 'シャツ', romaji: 'Shatsu', translation: 'Camisa', categoria: 'Ropa' },
+    { nihon: 'リボン', romaji: 'Ribon', translation: 'Cinta', categoria: 'Ropa' },
+    { nihon: 'ブーツ', romaji: 'Bu-tsu', translation: 'Botas', categoria: 'Ropa' },
+    { nihon: 'ベルト', romaji: 'Beruto', translation: 'Cinturón', categoria: 'Ropa' },
+    { nihon: 'サングラス', romaji: 'Sangurasu', translation: 'Gafas de sol', categoria: 'Ropa' },
+    { nihon: 'きもの', romaji: 'Kimono', translation: 'Kimono', categoria: 'Ropa' },
+    { nihon: 'サンダル', romaji: 'Sandaru', translation: 'Sandalias', categoria: 'Ropa' },
+    { nihon: 'メガネ', romaji: 'Megane', translation: 'Gafas de ver', categoria: 'Ropa' },
+    { nihon: 'ハンドバッグ', romaji: 'Handobaggu', translation: 'Bolso', categoria: 'Ropa' },
+    { nihon: 'したぎ', romaji: 'Shitagi', translation: 'Ropa interior', categoria: 'Ropa' },
+    { nihon: 'コート', romaji: 'Ko-to', translation: 'Abrigo', categoria: 'Ropa' },
+    { nihon: 'おび', romaji: 'Obi', translation: 'Cinturón Kimono', categoria: 'Ropa' },
+    { nihon: 'ジーンズ', romaji: 'Ji-nzu', translation: 'Vaqueros', categoria: 'Ropa' },
+    { nihon: 'ネクタイ', romaji: 'Nekutai', translation: 'Corbata', categoria: 'Ropa' },
+    { nihon: 'くつ', romaji: 'Kutsu', translation: 'Zapatillas', categoria: 'Ropa' },
+    { nihon: 'くつひも', romaji: 'Kutsuhimo', translation: 'Cordones zapatillas', categoria: 'Ropa' },
+    { nihon: 'みずぎ', romaji: 'Mizugi', translation: 'Bañador', categoria: 'Ropa' },
+    { nihon: 'ゼロー', romaji: 'zero-', translation: '0', categoria: 'Números' },
+    { nihon: '一\  /  いち', romaji: 'ichi', translation: '1', categoria: 'Números' },
+    { nihon: '二\  /  に', romaji: 'ni', translation: '2', categoria: 'Números' },
+    { nihon: '三\  /  さん', romaji: 'san', translation: '3', categoria: 'Números' },
+    { nihon: '四\  /  よん / し', romaji: 'yon / shi', translation: '4', categoria: 'Números' },
+    { nihon: '五\  /  ご', romaji: 'go', translation: '5', categoria: 'Números' },
+    { nihon: '六\  /  ろく', romaji: 'roku', translation: '6', categoria: 'Números' },
+    { nihon: '七\  /  なな / しち', romaji: 'nana / shichi', translation: '7', categoria: 'Números' },
+    { nihon: '八\  /  はち', romaji: 'hachi', translation: '8', categoria: 'Números' },
+    { nihon: '九\  /  きゅう / く', romaji: 'kyuu / ku', translation: '9', categoria: 'Números' },
+    { nihon: '十\  /  じゅう', romaji: 'jyuu', translation: '10', categoria: 'Números' },
+    { nihon: '十 #', romaji: 'jyuu #', translation: '11~19', categoria: 'Números' },
+    { nihon: '# 十 #', romaji: '# jyuu #', translation: '20~99', categoria: 'Números' },
+    { nihon: '百\  /  ひゃく', romaji: 'hyaku', translation: '100', categoria: 'Números' },
+    { nihon: '# 百', romaji: '# hyaku', translation: '200, 400, 500, 700, 900', categoria: 'Números' },
+    { nihon: 'さんびゃく', romaji: 'sanbyaku', translation: '300', categoria: 'Números' },
+    { nihon: 'ろっぴゃく', romaji: 'roppyaku', translation: '600', categoria: 'Números' },
+    { nihon: 'はっぴゃく', romaji: 'happyaku', translation: '800', categoria: 'Números' },
+    { nihon: '千\  /  せん', romaji: 'sen', translation: '1000', categoria: 'Números' },
+    { nihon: '# 千', romaji: '# sen', translation: '2.000, 4.000, 5.000, 6.000, 7.000, 9.000', categoria: 'Números' },
+    { nihon: 'さんぜん', romaji: 'sanzen', translation: '3.000', categoria: 'Números' },
+    { nihon: 'はっせん', romaji: 'hassen', translation: '8.000', categoria: 'Números' },
+    { nihon: '一万\  /  いちまん', romaji: 'ichiman', translation: '10.000', categoria: 'Números' },
+    { nihon: '# 万', romaji: '# man', translation: '20.000~90.000', categoria: 'Números' },
+    { nihon: '十万\  /  じゅうまん', romaji: 'jyuuman', translation: '100.000', categoria: 'Números' },
+    { nihon: '# 十万', romaji: '# jyuuman', translation: '200.000~900.000', categoria: 'Números' },
+    { nihon: '百万\  /  ひゃくまん', romaji: 'hyakuman', translation: '1.000.000', categoria: 'Números' },
+    { nihon: '# 百万', romaji: '# hyakuman', translation: '2.000.000~9.000.000', categoria: 'Números' },
+  	{ nihon: 'わたし', romaji: 'Watashi', translation: 'YO / Formal / Los dos / Standard', categoria: 'Pronombres' },
+    { nihon: 'わたくし', romaji: 'Watakushi', translation: 'YO / Muy formal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'あたし', romaji: 'Atashi', translation: 'YO / Informal / Mujer / Conversación', categoria: 'Pronombres' },
+    { nihon: 'ぼく', romaji: 'Boku', translation: 'YO / Informal / Hombre', categoria: 'Pronombres' },
+    { nihon: 'おれ', romaji: 'Ore', translation: 'YO / Informal / Hombre', categoria: 'Pronombres' },
+    { nihon: 'あなた', romaji: 'Anata', translation: 'TÚ / Formal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'きみ', romaji: 'Kimi', translation: 'TÚ / Informal / Los dos / Para alguien más joven', categoria: 'Pronombres' },
+    { nihon: 'あのかた', romaji: 'Ano kata', translation: 'ÉL / Muy formal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'あのひと', romaji: 'Ano hito', translation: 'ÉL / Formal e informal / Los dos / Esa persona', categoria: 'Pronombres' },
+    { nihon: 'かれ', romaji: 'Kare', translation: 'ÉL / Formal e informal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'あのかた', romaji: 'Ano kata', translation: 'ELLA / Muy formal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'あのひと', romaji: 'Ano hito', translation: 'ELLA / Formal e informal / Los dos / Esa persona', categoria: 'Pronombres' },
+    { nihon: 'かのじょ', romaji: 'Kanojyo', translation: 'ELLA / Formal e informal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'わたしたち', romaji: 'Watashitachi', translation: 'NOSOTROS / Formal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'ぼくたち', romaji: 'Bokutachi', translation: 'NOSOTROS / Informal / Hombre', categoria: 'Pronombres' },
+    { nihon: 'おれたち', romaji: 'Oretachi', translation: 'NOSOTROS / Informal / Hombre', categoria: 'Pronombres' },
+    { nihon: 'あなたたち', romaji: 'Anatatachi', translation: 'VOSOTROS / Formal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'きみたち', romaji: 'Kimitachi', translation: 'VOSOTROS / Informal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'かれたち', romaji: 'Karetachi', translation: 'ELLOS / Formal e informal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'かのじょたち', romaji: 'Kanojyotachi', translation: 'ELLAS / Formal e informal / Los dos', categoria: 'Pronombres' },
+    { nihon: 'あのひとたち', romaji: 'Ano hitotachi', translation: 'ELL?S / Formal e informal / Los dos / Cuando el género no se sabe', categoria: 'Pronombres' },
+];
+
+const vocabularyGame = new JapaneseVocabularyGame(vocabulary);
+
