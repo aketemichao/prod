@@ -12,7 +12,7 @@ Installation
 To set up this project locally, follow these steps:
 
 Clone the repository:
-git clone https://github.com/aketemichao/preprod.git
+git clone https://github.com/aketemichao/prepro.git
 
 Navigate to the project directory:
 cd japanese-vocabulary-game
